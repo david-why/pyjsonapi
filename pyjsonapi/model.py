@@ -8,6 +8,7 @@ from typing import (
     Literal,
     Optional,
     Self,
+    cast,
     get_args,
     get_origin,
     get_type_hints,
@@ -37,6 +38,7 @@ class Model(BaseModel):
     __jsonapi_hasrefs__: ClassVar[bool]
 
     id: str
+    meta: dict[str, Any]
 
     def __init_subclass__(
         cls, *, type: Optional[str] = None, endpoint: Optional[str] = None
@@ -111,26 +113,27 @@ class Model(BaseModel):
         cls._ensure_resolve_refs()
         model_data = {
             'id': data['id'],
+            'meta': data.get('meta', {}),
             **data['attributes'],
         }
-        for field, info in cls.model_fields.items():
-            # print(field, info, info.annotation)
-            origin = get_origin(info.annotation)
-            if not isinstance(origin, type) or not issubclass(origin, RelationshipBase):
-                continue
-            rel_type = get_args(info.annotation)[0]
+        for field, rel_def in cls.__jsonapi_relationships__.items():
+            rel_type = cast(Model, rel_def.type)
             if field in data['relationships'] and included:
                 reldata = data['relationships'][field]['data']
                 if isinstance(reldata, list):
                     items = find_included(
                         included, *((item['type'], item['id']) for item in reldata)
                     )
+                    models = []
+                    for item in items:
+                        models.append(
+                            rel_type._from_data(item, session, included=included)
+                        )
                 else:
-                    items = [
-                        find_included(included, (reldata['type'], reldata['id']))[0]
-                    ]
+                    item = find_included(included, (reldata['type'], reldata['id']))[0]
+                    models = rel_type._from_data(item, session, included=included)
                 model_data[field] = {
-                    'data': items,
+                    'data': models,
                     'to_many': isinstance(reldata, list),
                     'session': session,
                     'cls': rel_type,

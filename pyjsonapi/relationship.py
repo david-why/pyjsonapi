@@ -75,7 +75,6 @@ class ToManyRelationship(RelationshipBase[ModelT]):
     @property
     def items(self) -> List[ModelT]:
         return self.fetch_items()
-        # raise ValueError('Cannot access items on a to-one relationship')
 
     def fetch_items(
         self,
@@ -105,7 +104,7 @@ class _ToOneRel(ToOneRelationship[ModelT]):
                 UserWarning,
                 stacklevel=2,
             )
-        return self._reltype._from_data(self._value, self._session)
+        return self._value
 
 
 class _ToOneRelSelf(ToOneRelationship[ModelT]):
@@ -134,7 +133,7 @@ class _ToManyRel(ToManyRelationship[ModelT]):
                 UserWarning,
                 stacklevel=2,
             )
-        return [self._reltype._from_data(v, self._session) for v in self._value]
+        return self._value
 
 
 class _ToManyRelSelf(ToManyRelationship[ModelT]):
