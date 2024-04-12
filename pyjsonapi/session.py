@@ -47,12 +47,17 @@ class Session:
         include: Optional[Union[str, List[str]]] = None,
         *,
         type: Optional[Type['Model']] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
     ) -> Dict[str, str]:
         include = Session._parse_include(include, type=type)
         real_params = {}
         if include:
             real_params['include'] = ','.join(include)
+        if isinstance(with_meta, str):
+            with_meta = [with_meta]
+        if with_meta:
+            real_params['with_meta'] = ','.join(with_meta)
         if params:
             real_params.update(params)
         return real_params
@@ -63,15 +68,37 @@ class Session:
         id: str,
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
     ) -> ModelT:
         url = f'{self.base_url}/{type.__jsonapi_endpoint__}/{id}'
-        real_params = self._parse_params(include, type=type, params=params)
+        real_params = self._parse_params(
+            include, type=type, with_meta=with_meta, params=params
+        )
         resp = self.session.get(url, params=real_params)
         resp.raise_for_status()
         json = resp.json()
         data = json['data']
         return type._from_data(data, self, included=json.get('included'))
+
+    def fetch_all(
+        self,
+        type: Type[ModelT],
+        *,
+        include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
+        params: Optional[Dict[str, str]] = None
+    ) -> List[ModelT]:
+        url = f'{self.base_url}/{type.__jsonapi_endpoint__}'
+        real_params = self._parse_params(
+            include, type=type, with_meta=with_meta, params=params
+        )
+        resp = self.session.get(url, params=real_params)
+        resp.raise_for_status()
+        json = resp.json()
+        data = json['data']
+        included = json.get('included')
+        return [type._from_data(item, self, included=included) for item in data]
 
     def fetch_related(
         self,
@@ -81,6 +108,7 @@ class Session:
         relationship: 'Union[str, RelationshipBase[Any]]',
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
     ) -> Any:
         if isinstance(relationship, str):
@@ -88,7 +116,9 @@ class Session:
         else:
             rel_name = relationship.name  # type: ignore
         url = f'{self.base_url}/{type.__jsonapi_endpoint__}/{id}/{rel_name}'
-        real_params = self._parse_params(include, type=type, params=params)
+        real_params = self._parse_params(
+            include, type=type, with_meta=with_meta, params=params
+        )
         resp = self.session.get(url, params=real_params)
         resp.raise_for_status()
         json = resp.json()
@@ -106,10 +136,11 @@ class Session:
         relationship: 'Union[str, RelationshipBase[Any]]',
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
     ) -> ModelT:
         return self.fetch_related(
-            type, id, relationship, include=include, params=params
+            type, id, relationship, include=include, params=params, with_meta=with_meta
         )
 
     def fetch_related_many(
@@ -119,8 +150,9 @@ class Session:
         relationship: 'Union[str, RelationshipBase[Any]]',
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
     ) -> List[ModelT]:
         return self.fetch_related(
-            type, id, relationship, include=include, params=params
+            type, id, relationship, include=include, params=params, with_meta=with_meta
         )

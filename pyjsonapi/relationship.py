@@ -26,7 +26,6 @@ class RelationshipBase(Generic[ModelT]):
         self._value = value
         self._reltype = reltype
         self._session = session
-        print('rel')
 
     @classmethod
     def __get_pydantic_core_schema__(
@@ -50,8 +49,6 @@ class RelationshipBase(Generic[ModelT]):
             if value.get('to_many'):
                 return _ToManyRelSelf(*args)
             return _ToOneRelSelf(*args)
-        # if hasattr(value, '__jsonapi_model_marker__'):
-        #     return _ToOneRel()
         assert False, 'invalid relationship value'
 
     @staticmethod
@@ -68,6 +65,7 @@ class ToOneRelationship(RelationshipBase[ModelT]):
         self,
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> ModelT:
         raise NotImplementedError
@@ -83,6 +81,7 @@ class ToManyRelationship(RelationshipBase[ModelT]):
         self,
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> List[ModelT]:
         raise NotImplementedError
@@ -99,15 +98,10 @@ class Relationship(ToOneRelationship[ModelT], ToManyRelationship[ModelT]):
 
 
 class _ToOneRel(ToOneRelationship[ModelT]):
-    def fetch_item(
-        self,
-        *,
-        include: Optional[Union[str, List[str]]] = None,
-        params: Optional[Dict[str, Any]] = None
-    ) -> ModelT:
-        if include or params:
+    def fetch_item(self, **kwargs) -> ModelT:
+        if kwargs:
             warnings.warn(
-                'include and params are not supported for included relationships',
+                'extra args are not supported for included relationships',
                 UserWarning,
                 stacklevel=2,
             )
@@ -119,6 +113,7 @@ class _ToOneRelSelf(ToOneRelationship[ModelT]):
         self,
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> ModelT:
         return self._session.fetch_related_one(
@@ -126,20 +121,16 @@ class _ToOneRelSelf(ToOneRelationship[ModelT]):
             self._value['self_id'],
             self._value['rel_type'],
             include=include,
+            with_meta=with_meta,
             params=params,
         )
 
 
 class _ToManyRel(ToManyRelationship[ModelT]):
-    def fetch_items(
-        self,
-        *,
-        include: Optional[Union[str, List[str]]] = None,
-        params: Optional[Dict[str, Any]] = None
-    ) -> List[ModelT]:
-        if include or params:
+    def fetch_items(self, **kwargs) -> List[ModelT]:
+        if kwargs:
             warnings.warn(
-                'include and params are not supported for included relationships',
+                'extra args are not supported for included relationships',
                 UserWarning,
                 stacklevel=2,
             )
@@ -151,6 +142,7 @@ class _ToManyRelSelf(ToManyRelationship[ModelT]):
         self,
         *,
         include: Optional[Union[str, List[str]]] = None,
+        with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> List[ModelT]:
         return self._session.fetch_related_many(
@@ -158,6 +150,7 @@ class _ToManyRelSelf(ToManyRelationship[ModelT]):
             self._value['self_id'],
             self._value['rel_type'],
             include=include,
+            with_meta=with_meta,
             params=params,
         )
 
