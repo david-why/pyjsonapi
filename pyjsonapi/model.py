@@ -58,7 +58,7 @@ class Model(BaseModel):
         for field, info in cls.model_fields.items():
             annotation = info.annotation
             origin = get_origin(annotation)
-            if origin and issubclass(origin, RelationshipBase):
+            if isinstance(origin, type) and issubclass(origin, RelationshipBase):
                 definition = info.default
                 info.default = PydanticUndefined
                 rel_type = get_args(annotation)[0]
@@ -116,7 +116,7 @@ class Model(BaseModel):
         for field, info in cls.model_fields.items():
             # print(field, info, info.annotation)
             origin = get_origin(info.annotation)
-            if not origin or not issubclass(origin, RelationshipBase):
+            if not isinstance(origin, type) or not issubclass(origin, RelationshipBase):
                 continue
             rel_type = get_args(info.annotation)[0]
             if field in data['relationships'] and included:
