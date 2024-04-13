@@ -1,10 +1,15 @@
 [tool.poetry]
-name = "pyjsonapi"
-version = "0.1.1"
+name = "jsonapi-python"
+version = "0.1.1.post2"
 description = "Python JSON:API implementation"
 authors = ["david-why <david_why@outlook.com>"]
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/david-why/pyjsonapi"
+
+packages = [
+    { include = "pyjsonapi", from = "src" }
+]
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -13,6 +18,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Typing :: Typed",
 ]
+
+[tool.poetry.urls]
+Issues = "https://github.com/david-why/pyjsonapi/issues"
 
 [tool.poetry.dependencies]
 python = "^3.10"

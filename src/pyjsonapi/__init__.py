@@ -5,4 +5,4 @@ from pyjsonapi.relationship import ToOneRelationship as ToOneRelationship
 from pyjsonapi.relationship import make_relationship as make_relationship
 from pyjsonapi.session import Session as Session
 
-__version__ = '0.1.1'
+__version__ = '0.1.1.post2'
