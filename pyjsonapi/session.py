@@ -1,22 +1,10 @@
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    get_args,
-    get_origin,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, TypeVar, Union
 
 import requests
 
-
 if TYPE_CHECKING:
-    from pyjsonapi.relationship import Relationship, RelationshipBase
     from pyjsonapi.model import Model
+    from pyjsonapi.relationship import RelationshipBase
 
 ModelT = TypeVar('ModelT', bound='Model')
 
@@ -87,7 +75,7 @@ class Session:
         *,
         include: Optional[Union[str, List[str]]] = None,
         with_meta: Optional[Union[str, List[str]]] = None,
-        params: Optional[Dict[str, str]] = None
+        params: Optional[Dict[str, str]] = None,
     ) -> List[ModelT]:
         url = f'{self.base_url}/{type.__jsonapi_endpoint__}'
         real_params = self._parse_params(
@@ -138,7 +126,7 @@ class Session:
         include: Optional[Union[str, List[str]]] = None,
         with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
-    ) -> ModelT:
+    ) -> Any:
         return self.fetch_related(
             type, id, relationship, include=include, params=params, with_meta=with_meta
         )
@@ -152,7 +140,7 @@ class Session:
         include: Optional[Union[str, List[str]]] = None,
         with_meta: Optional[Union[str, List[str]]] = None,
         params: Optional[Dict[str, str]] = None,
-    ) -> List[ModelT]:
+    ) -> List[Any]:
         return self.fetch_related(
             type, id, relationship, include=include, params=params, with_meta=with_meta
         )
