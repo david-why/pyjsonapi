@@ -136,20 +136,19 @@ class Model(BaseModel):
                     'data': models,
                     'to_many': isinstance(reldata, list),
                     'session': session,
-                    'cls': rel_type,
+                    'rel_def': rel_def,
+                    'self_type': cls,
+                    'self_id': data['id'],
                     'type': 'reldata',
                 }
             else:
-                relationship = cls.__jsonapi_relationships__[field]
                 model_data[field] = {
-                    'data': {
-                        'self_id': data['id'],
-                        'self_type': cls,
-                        'rel_type': relationship,
-                    },
-                    'to_many': relationship.to_many,
+                    'data': data['id'],
+                    'to_many': rel_def.to_many,
                     'session': session,
-                    'cls': rel_type,
+                    'rel_def': rel_def,
+                    'self_type': cls,
+                    'self_id': data['id'],
                     'type': 'self',
                 }
         return cls.model_validate(model_data)

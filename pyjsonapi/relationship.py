@@ -22,9 +22,18 @@ ModelT = TypeVar('ModelT', bound='Model')
 
 
 class RelationshipBase(Generic[ModelT]):
-    def __init__(self, value: Any, reltype: Type[ModelT], session: 'Session'):
+    def __init__(
+        self,
+        value: Any,
+        self_type: Type['Model'],
+        self_id: str,
+        rel_def: 'RelationshipDef',
+        session: 'Session',
+    ):
         self._value = value
-        self._reltype = reltype
+        self._self_type = self_type
+        self._self_id = self_id
+        self._rel_def = rel_def
         self._session = session
 
     @classmethod
@@ -41,7 +50,13 @@ class RelationshipBase(Generic[ModelT]):
     @staticmethod
     def _validate(value):
         if isinstance(value, dict):
-            args = value['data'], value['cls'], value['session']
+            args = (
+                value['data'],
+                value['self_type'],
+                value['self_id'],
+                value['rel_def'],
+                value['session'],
+            )
             if value['type'] == 'reldata':
                 if value.get('to_many'):
                     return _ToManyRel(*args)
@@ -99,11 +114,13 @@ class Relationship(ToOneRelationship[ModelT], ToManyRelationship[ModelT]):
 class _ToOneRel(ToOneRelationship[ModelT]):
     def fetch_item(self, **kwargs) -> ModelT:
         if kwargs:
-            warnings.warn(
-                'extra args are not supported for included relationships',
-                UserWarning,
-                stacklevel=2,
-            )
+            return _ToOneRelSelf(
+                self._self_id,
+                self._self_type,
+                self._self_id,
+                self._rel_def,
+                self._session,
+            ).fetch_item(**kwargs)
         return self._value
 
 
@@ -116,9 +133,9 @@ class _ToOneRelSelf(ToOneRelationship[ModelT]):
         params: Optional[Dict[str, Any]] = None
     ) -> ModelT:
         return self._session.fetch_related_one(
-            self._value['self_type'],
-            self._value['self_id'],
-            self._value['rel_type'],
+            self._self_type,
+            self._value,
+            self._rel_def.name,
             include=include,
             with_meta=with_meta,
             params=params,
@@ -128,11 +145,13 @@ class _ToOneRelSelf(ToOneRelationship[ModelT]):
 class _ToManyRel(ToManyRelationship[ModelT]):
     def fetch_items(self, **kwargs) -> List[ModelT]:
         if kwargs:
-            warnings.warn(
-                'extra args are not supported for included relationships',
-                UserWarning,
-                stacklevel=2,
-            )
+            return _ToManyRelSelf(
+                self._self_id,
+                self._self_type,
+                self._self_id,
+                self._rel_def,
+                self._session,
+            ).fetch_items(**kwargs)
         return self._value
 
 
@@ -145,9 +164,9 @@ class _ToManyRelSelf(ToManyRelationship[ModelT]):
         params: Optional[Dict[str, Any]] = None
     ) -> List[ModelT]:
         return self._session.fetch_related_many(
-            self._value['self_type'],
-            self._value['self_id'],
-            self._value['rel_type'],
+            self._self_type,
+            self._value,
+            self._rel_def.name,
             include=include,
             with_meta=with_meta,
             params=params,
